@@ -1,0 +1,25 @@
+{
+  "name": "ricebox-themes",
+  "displayName": "Ricebox Themes",
+  "description": "Color themes generated from ricebox dotfiles",
+  "version": "1.0.0",
+  "publisher": "ricebox",
+  "engines": { "vscode": "^1.60.0" },
+  "categories": ["Themes"],
+  "contributes": {
+    "themes": [
+      { "label": "Ricebox Catppuccin Mocha", "uiTheme": "vs-dark", "path": "./themes/ricebox-catppuccin-mocha-color-theme.json" },
+      { "label": "Ricebox Cyberpunk", "uiTheme": "vs-dark", "path": "./themes/ricebox-cyberpunk-color-theme.json" },
+      { "label": "Ricebox Dark Green", "uiTheme": "vs-dark", "path": "./themes/ricebox-dark-green-color-theme.json" },
+      { "label": "Ricebox Dracula", "uiTheme": "vs-dark", "path": "./themes/ricebox-dracula-color-theme.json" },
+      { "label": "Ricebox Everforest", "uiTheme": "vs-dark", "path": "./themes/ricebox-everforest-color-theme.json" },
+      { "label": "Ricebox Gruvbox Dark", "uiTheme": "vs-dark", "path": "./themes/ricebox-gruvbox-dark-color-theme.json" },
+      { "label": "Ricebox Kanagawa", "uiTheme": "vs-dark", "path": "./themes/ricebox-kanagawa-color-theme.json" },
+      { "label": "Ricebox Nord", "uiTheme": "vs-dark", "path": "./themes/ricebox-nord-color-theme.json" },
+      { "label": "Ricebox One Dark", "uiTheme": "vs-dark", "path": "./themes/ricebox-one-dark-color-theme.json" },
+      { "label": "Ricebox Rose Pine", "uiTheme": "vs-dark", "path": "./themes/ricebox-rose-pine-color-theme.json" },
+      { "label": "Ricebox Solarized Dark", "uiTheme": "vs-dark", "path": "./themes/ricebox-solarized-dark-color-theme.json" },
+      { "label": "Ricebox Tokyo Night", "uiTheme": "vs-dark", "path": "./themes/ricebox-tokyo-night-color-theme.json" }
+    ]
+  }
+}

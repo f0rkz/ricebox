@@ -1,0 +1,110 @@
+configuration {
+  show-icons: true;
+  timeout {
+      action: "kb-cancel";
+      delay:  0;
+  }
+  filebrowser {
+      directories-first: true;
+      sorting-method:    "name";
+  }
+}
+
+* {
+    bg:       #0D0221;
+    bg-alt:   #1A0A3E;
+    fg:       #E0D0FF;
+    fg-alt:   #7B6B99;
+    primary:  #FF00FF;
+    secondary:#00FFFF;
+    alert:    #FF2079;
+
+    background-color: @bg;
+    text-color:       @fg;
+    font:             "0xProto Nerd Font 12";
+}
+
+window {
+    width:            30%;
+    border:           2px;
+    border-color:     @primary;
+    border-radius:    6px;
+    padding:          0;
+}
+
+mainbox {
+    padding:  0;
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    padding:          10px 14px;
+    background-color: @bg-alt;
+    children:         [ prompt, entry ];
+    spacing:          10px;
+}
+
+prompt {
+    text-color:       @primary;
+    background-color: inherit;
+}
+
+entry {
+    text-color:       @fg;
+    background-color: inherit;
+    placeholder:      "search...";
+    placeholder-color: @fg-alt;
+}
+
+listview {
+    lines:            8;
+    padding:          6px 0;
+    scrollbar:        false;
+    fixed-height:     false;
+    background-color: @bg;
+}
+
+element {
+    padding:          8px 14px;
+    background-color: @bg;
+    text-color:       @fg;
+}
+
+element normal.normal {
+    background-color: @bg;
+    text-color:       @fg;
+}
+
+element alternate.normal {
+    background-color: @bg;
+    text-color:       @fg;
+}
+
+element selected.normal {
+    background-color: @bg-alt;
+    text-color:       @primary;
+    border:           0 0 0 3px;
+    border-color:     @primary;
+}
+
+element normal.urgent,
+element alternate.urgent {
+    background-color: @bg;
+    text-color: @alert;
+}
+
+element selected.urgent {
+    background-color: @alert;
+    text-color:       @bg;
+}
+
+element normal.active,
+element alternate.active {
+    background-color: @bg;
+    text-color: @secondary;
+}
+
+element selected.active {
+    background-color: @secondary;
+    text-color:       @bg;
+}

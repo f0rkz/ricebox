@@ -1,0 +1,7 @@
+*.bak
+*.bak2
+*.bak3
+*.bak4
+*.pre-ricebox
+themes/.current
+ricebox.env

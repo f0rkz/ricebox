@@ -1,0 +1,88 @@
+/* ricebox-tokyo-night */
+.theme-dark.ricebox-tokyo-night {
+  --background-primary: #13141C;
+  --background-primary-alt: #1A1B26;
+  --background-secondary: #1A1B26;
+  --background-secondary-alt: #24283B;
+  --background-modifier-border: #24283B;
+  --background-modifier-form-field: #24283B;
+  --background-modifier-form-field-highlighted: #24283B;
+  --background-modifier-box-shadow: rgba(0, 0, 0, 0.3);
+  --background-modifier-success: #9ECE6A;
+  --background-modifier-error: #F7768E;
+  --background-modifier-error-rgb: 230, 60, 60;
+  --background-modifier-cover: rgba(0, 0, 0, 0.6);
+
+  --text-normal: #C0CAF5;
+  --text-muted: #565F89;
+  --text-faint: #444B6A;
+  --text-error: #F7768E;
+  --text-accent: #7AA2F7;
+  --text-accent-hover: #9ABAFF;
+  --text-on-accent: #1A1B26;
+  --text-selection: #24283B;
+  --text-highlight-bg: #E0AF6833;
+
+  --interactive-normal: #24283B;
+  --interactive-hover: #444B6A;
+  --interactive-accent: #7AA2F7;
+  --interactive-accent-rgb: 122,162,247;
+  --interactive-accent-hover: #9ABAFF;
+
+  --scrollbar-bg: #1A1B26;
+  --scrollbar-thumb-bg: #444B6A44;
+  --scrollbar-active-thumb-bg: #444B6A;
+
+  --titlebar-background: #1A1B26;
+  --titlebar-background-focused: #1A1B26;
+
+  --nav-item-color: #C0CAF5;
+  --nav-item-color-hover: #7AA2F7;
+  --nav-item-color-active: #7AA2F7;
+  --nav-item-background-hover: #24283B;
+  --nav-item-background-active: #24283B;
+
+  --tag-color: #9ECE6A;
+  --tag-background: #24283B;
+
+  --h1-color: #7AA2F7;
+  --h2-color: #7AA2F7;
+  --h3-color: #7DCFFF;
+  --h4-color: #9ECE6A;
+  --h5-color: #E0AF68;
+  --h6-color: #565F89;
+
+  --bold-color: #C0CAF5;
+  --italic-color: #C0CAF5;
+  --link-color: #7AA2F7;
+  --link-color-hover: #9ABAFF;
+  --link-external-color: #7DCFFF;
+  --link-external-color-hover: #A0DCFF;
+
+  --code-normal: #9ECE6A;
+  --code-background: #24283B;
+  --code-comment: #444B6A;
+  --code-function: #7AA2F7;
+  --code-keyword: #BB9AF7;
+  --code-string: #9ECE6A;
+  --code-tag: #7AA2F7;
+  --code-value: #7DCFFF;
+  --code-property: #7DCFFF;
+  --code-important: #F7768E;
+
+  --blockquote-border-color: #7AA2F7;
+
+  --table-header-background: #24283B;
+  --table-row-even-background: #1A1B26;
+  --table-row-odd-background: #13141C;
+
+  --checkbox-color: #7AA2F7;
+  --checkbox-marker-color: #1A1B26;
+  --checklist-done-color: #444B6A;
+
+  --graph-line: #444B6A;
+  --graph-node: #7AA2F7;
+  --graph-node-focused: #9ABAFF;
+  --graph-node-tag: #9ECE6A;
+  --graph-node-attachment: #9ECE6A;
+}

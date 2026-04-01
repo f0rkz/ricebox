@@ -1,0 +1,88 @@
+/* ricebox-one-dark */
+.theme-dark.ricebox-one-dark {
+  --background-primary: #1E2228;
+  --background-primary-alt: #282C34;
+  --background-secondary: #282C34;
+  --background-secondary-alt: #353B45;
+  --background-modifier-border: #353B45;
+  --background-modifier-form-field: #353B45;
+  --background-modifier-form-field-highlighted: #353B45;
+  --background-modifier-box-shadow: rgba(0, 0, 0, 0.3);
+  --background-modifier-success: #98C379;
+  --background-modifier-error: #E06C75;
+  --background-modifier-error-rgb: 230, 60, 60;
+  --background-modifier-cover: rgba(0, 0, 0, 0.6);
+
+  --text-normal: #ABB2BF;
+  --text-muted: #5C6370;
+  --text-faint: #4B5263;
+  --text-error: #E06C75;
+  --text-accent: #61AFEF;
+  --text-accent-hover: #82C3F5;
+  --text-on-accent: #282C34;
+  --text-selection: #353B45;
+  --text-highlight-bg: #E5C07B33;
+
+  --interactive-normal: #353B45;
+  --interactive-hover: #4B5263;
+  --interactive-accent: #61AFEF;
+  --interactive-accent-rgb: 97,175,239;
+  --interactive-accent-hover: #82C3F5;
+
+  --scrollbar-bg: #282C34;
+  --scrollbar-thumb-bg: #4B526344;
+  --scrollbar-active-thumb-bg: #4B5263;
+
+  --titlebar-background: #282C34;
+  --titlebar-background-focused: #282C34;
+
+  --nav-item-color: #ABB2BF;
+  --nav-item-color-hover: #61AFEF;
+  --nav-item-color-active: #61AFEF;
+  --nav-item-background-hover: #353B45;
+  --nav-item-background-active: #353B45;
+
+  --tag-color: #98C379;
+  --tag-background: #353B45;
+
+  --h1-color: #61AFEF;
+  --h2-color: #61AFEF;
+  --h3-color: #56B6C2;
+  --h4-color: #98C379;
+  --h5-color: #E5C07B;
+  --h6-color: #5C6370;
+
+  --bold-color: #ABB2BF;
+  --italic-color: #ABB2BF;
+  --link-color: #61AFEF;
+  --link-color-hover: #82C3F5;
+  --link-external-color: #56B6C2;
+  --link-external-color-hover: #78C8D2;
+
+  --code-normal: #98C379;
+  --code-background: #353B45;
+  --code-comment: #4B5263;
+  --code-function: #61AFEF;
+  --code-keyword: #C678DD;
+  --code-string: #98C379;
+  --code-tag: #61AFEF;
+  --code-value: #56B6C2;
+  --code-property: #56B6C2;
+  --code-important: #E06C75;
+
+  --blockquote-border-color: #61AFEF;
+
+  --table-header-background: #353B45;
+  --table-row-even-background: #282C34;
+  --table-row-odd-background: #1E2228;
+
+  --checkbox-color: #61AFEF;
+  --checkbox-marker-color: #282C34;
+  --checklist-done-color: #4B5263;
+
+  --graph-line: #4B5263;
+  --graph-node: #61AFEF;
+  --graph-node-focused: #82C3F5;
+  --graph-node-tag: #98C379;
+  --graph-node-attachment: #98C379;
+}
