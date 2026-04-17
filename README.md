@@ -48,14 +48,16 @@ cd ricebox
 ./install.sh
 ```
 
+the installer detects your OS (`/etc/os-release`) and picks the right package manager. supported: debian/ubuntu (apt) and arch/cachyos (pacman).
+
 the installer will:
 
-1. install dependencies via apt (polybar, i3, kitty, rofi, picom, etc)
+1. install dependencies via apt or pacman (polybar, i3, kitty, rofi, picom, etc)
 2. install 0xProto Nerd Font + Font Awesome 6
 3. backup existing configs and copy ricebox configs
 4. generate `~/.config/ricebox.env` with auto-detected settings
 5. optionally set up sudoers for power profile switching + tailscale
-6. optionally install `tzupdate` for automatic timezone switching
+6. optionally install `tzupdate` for automatic timezone switching (via AUR/pipx on arch, pip on debian)
 
 ## configuration
 

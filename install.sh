@@ -6,6 +6,18 @@ ENV_FILE="$HOME/.config/ricebox.env"
 
 echo "=== ricebox installer ==="
 
+# --- detect OS ---
+OS_FAMILY="unknown"
+if [ -r /etc/os-release ]; then
+  # shellcheck disable=SC1091
+  . /etc/os-release
+  case "${ID:-}:${ID_LIKE:-}" in
+    *arch*|*cachyos*|*:*arch*) OS_FAMILY="arch" ;;
+    *debian*|*ubuntu*|*:*debian*|*:*ubuntu*) OS_FAMILY="debian" ;;
+  esac
+fi
+echo "  detected os family: $OS_FAMILY"
+
 # --- dependencies ---
 echo "[1/6] checking dependencies..."
 
@@ -13,7 +25,7 @@ DEPS=(
   polybar i3 picom kitty rofi
   jq xdotool xclip maim nitrogen
   nmcli bluetoothctl tailscale
-  curl
+  curl wget unzip
 )
 
 MISSING=()
@@ -25,35 +37,70 @@ done
 
 if [ ${#MISSING[@]} -gt 0 ]; then
   echo "  missing: ${MISSING[*]}"
-  echo "  attempting apt install..."
 
-  declare -A PKG_MAP=(
-    [polybar]=polybar
-    [i3]=i3
-    [picom]=picom
-    [kitty]=kitty
-    [rofi]=rofi
-    [jq]=jq
-    [xdotool]=xdotool
-    [xclip]=xclip
-    [maim]=maim
-    [nitrogen]=nitrogen
-    [nmcli]=network-manager
-    [bluetoothctl]=bluez
-    [curl]=curl
-  )
+  case "$OS_FAMILY" in
+    debian)
+      declare -A PKG_MAP=(
+        [polybar]=polybar
+        [i3]=i3
+        [picom]=picom
+        [kitty]=kitty
+        [rofi]=rofi
+        [jq]=jq
+        [xdotool]=xdotool
+        [xclip]=xclip
+        [maim]=maim
+        [nitrogen]=nitrogen
+        [nmcli]=network-manager
+        [bluetoothctl]=bluez
+        [curl]=curl
+        [wget]=wget
+        [unzip]=unzip
+        [tailscale]=tailscale
+      )
+      INSTALLER=(sudo apt install -y)
+      ;;
+    arch)
+      declare -A PKG_MAP=(
+        [polybar]=polybar
+        [i3]=i3-wm
+        [picom]=picom
+        [kitty]=kitty
+        [rofi]=rofi
+        [jq]=jq
+        [xdotool]=xdotool
+        [xclip]=xclip
+        [maim]=maim
+        [nitrogen]=nitrogen
+        [nmcli]=networkmanager
+        [bluetoothctl]=bluez-utils
+        [curl]=curl
+        [wget]=wget
+        [unzip]=unzip
+        [tailscale]=tailscale
+      )
+      INSTALLER=(sudo pacman -S --needed --noconfirm)
+      ;;
+    *)
+      echo "  unknown OS family - install manually: ${MISSING[*]}"
+      INSTALLER=()
+      ;;
+  esac
 
-  PKGS=()
-  for m in "${MISSING[@]}"; do
-    if [ "${PKG_MAP[$m]+exists}" ]; then
-      PKGS+=("${PKG_MAP[$m]}")
-    else
-      echo "  skipping $m (install manually)"
+  if [ ${#INSTALLER[@]} -gt 0 ]; then
+    echo "  attempting install via ${INSTALLER[0]}..."
+    PKGS=()
+    for m in "${MISSING[@]}"; do
+      if [ "${PKG_MAP[$m]+exists}" ]; then
+        PKGS+=("${PKG_MAP[$m]}")
+      else
+        echo "  skipping $m (install manually)"
+      fi
+    done
+
+    if [ ${#PKGS[@]} -gt 0 ]; then
+      "${INSTALLER[@]}" "${PKGS[@]}"
     fi
-  done
-
-  if [ ${#PKGS[@]} -gt 0 ]; then
-    sudo apt install -y "${PKGS[@]}"
   fi
 fi
 
@@ -257,7 +304,30 @@ echo "[6/6] optional extras..."
 if ! command -v tzupdate &>/dev/null; then
   read -p "  install tzupdate for auto timezone? [y/N] " yn || yn=""
   if [[ "$yn" =~ ^[Yy] ]]; then
-    pip install tzupdate
+    case "$OS_FAMILY" in
+      arch)
+        # arch blocks system pip (PEP 668) - prefer AUR helper, else pipx
+        if command -v paru &>/dev/null; then
+          paru -S --needed --noconfirm tzupdate
+        elif command -v yay &>/dev/null; then
+          yay -S --needed --noconfirm tzupdate
+        elif command -v pipx &>/dev/null; then
+          pipx install tzupdate
+        else
+          echo "  no paru/yay/pipx found - install one, or: pacman -S python-pipx && pipx install tzupdate"
+        fi
+        ;;
+      debian)
+        if command -v pipx &>/dev/null; then
+          pipx install tzupdate
+        else
+          pip install --user tzupdate
+        fi
+        ;;
+      *)
+        pip install --user tzupdate || echo "  install manually"
+        ;;
+    esac
   fi
 fi
 
