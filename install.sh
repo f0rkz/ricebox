@@ -71,7 +71,7 @@ if [ ${#MISSING[@]} -gt 0 ]; then
         [xdotool]=xdotool
         [xclip]=xclip
         [maim]=maim
-        [nitrogen]=nitrogen
+        [nitrogen]=aur:nitrogen
         [nmcli]=networkmanager
         [bluetoothctl]=bluez-utils
         [curl]=curl
@@ -80,6 +80,14 @@ if [ ${#MISSING[@]} -gt 0 ]; then
         [tailscale]=tailscale
       )
       INSTALLER=(sudo pacman -S --needed --noconfirm)
+      # pick AUR helper if present
+      AUR_HELPER=""
+      for h in paru yay; do
+        if command -v "$h" &>/dev/null; then
+          AUR_HELPER="$h"
+          break
+        fi
+      done
       ;;
     *)
       echo "  unknown OS family - install manually: ${MISSING[*]}"
@@ -90,9 +98,15 @@ if [ ${#MISSING[@]} -gt 0 ]; then
   if [ ${#INSTALLER[@]} -gt 0 ]; then
     echo "  attempting install via ${INSTALLER[0]}..."
     PKGS=()
+    AUR_PKGS=()
     for m in "${MISSING[@]}"; do
       if [ "${PKG_MAP[$m]+exists}" ]; then
-        PKGS+=("${PKG_MAP[$m]}")
+        p="${PKG_MAP[$m]}"
+        if [[ "$p" == aur:* ]]; then
+          AUR_PKGS+=("${p#aur:}")
+        else
+          PKGS+=("$p")
+        fi
       else
         echo "  skipping $m (install manually)"
       fi
@@ -100,6 +114,15 @@ if [ ${#MISSING[@]} -gt 0 ]; then
 
     if [ ${#PKGS[@]} -gt 0 ]; then
       "${INSTALLER[@]}" "${PKGS[@]}"
+    fi
+
+    if [ ${#AUR_PKGS[@]} -gt 0 ]; then
+      if [ -n "${AUR_HELPER:-}" ]; then
+        echo "  installing AUR packages via $AUR_HELPER: ${AUR_PKGS[*]}"
+        "$AUR_HELPER" -S --needed --noconfirm "${AUR_PKGS[@]}"
+      else
+        echo "  WARNING: no AUR helper (paru/yay) found - install manually: ${AUR_PKGS[*]}"
+      fi
     fi
   fi
 fi
