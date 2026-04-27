@@ -1,0 +1,25 @@
+FROM debian:12
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      sudo bash curl wget unzip ca-certificates fontconfig \
+      locales python3 \
+    && sed -i 's/^# *\(en_US.UTF-8\)/\1/' /etc/locale.gen \
+    && locale-gen \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -s /bin/bash tester \
+    && echo "tester ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/tester \
+    && chmod 440 /etc/sudoers.d/tester
+
+USER tester
+WORKDIR /home/tester/ricebox
+
+COPY --chown=tester:tester . .
+
+ENV RICEBOX_NONINTERACTIVE=1 \
+    LANG=en_US.UTF-8 \
+    HOME=/home/tester
+
+CMD ["bash", "./install.sh"]

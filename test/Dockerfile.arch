@@ -1,0 +1,26 @@
+FROM archlinux:latest
+
+RUN pacman -Sy --noconfirm archlinux-keyring \
+    && pacman -Syu --noconfirm \
+    && pacman -S --noconfirm --needed \
+         sudo bash git base-devel fontconfig glibc \
+    && sed -i 's/^#\(en_US.UTF-8\)/\1/' /etc/locale.gen \
+    && locale-gen \
+    && pacman -Scc --noconfirm
+
+RUN useradd -m -s /bin/bash tester \
+    && echo "tester ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/tester \
+    && chmod 440 /etc/sudoers.d/tester
+
+USER tester
+WORKDIR /home/tester/ricebox
+
+COPY --chown=tester:tester . .
+
+# SKIP_AUR=1 because bootstrapping paru in CI is slow and tests pkg routing, not AUR itself
+ENV RICEBOX_NONINTERACTIVE=1 \
+    RICEBOX_SKIP_AUR=1 \
+    LANG=en_US.UTF-8 \
+    HOME=/home/tester
+
+CMD ["bash", "./install.sh"]

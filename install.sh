@@ -4,7 +4,33 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="$HOME/.config/ricebox.env"
 
+NONINTERACTIVE="${RICEBOX_NONINTERACTIVE:-0}"
+SKIP_AUR="${RICEBOX_SKIP_AUR:-0}"
+
+# prompt_yn <prompt> <default: y|n>
+prompt_yn() {
+  local p=$1 d=$2 a
+  if [ "$NONINTERACTIVE" = "1" ]; then
+    echo "$d"
+    return
+  fi
+  read -p "$p" a || a=""
+  echo "${a:-$d}"
+}
+
+# prompt_val <prompt> <default>
+prompt_val() {
+  local p=$1 d=${2:-} a
+  if [ "$NONINTERACTIVE" = "1" ]; then
+    echo "$d"
+    return
+  fi
+  read -p "$p" a || a=""
+  echo "${a:-$d}"
+}
+
 echo "=== ricebox installer ==="
+[ "$NONINTERACTIVE" = "1" ] && echo "  (noninteractive mode)"
 
 # --- detect OS ---
 OS_FAMILY="unknown"
@@ -21,22 +47,35 @@ echo "  detected os family: $OS_FAMILY"
 # --- dependencies ---
 echo "[1/6] checking dependencies..."
 
-DEPS=(
+REQUIRED_DEPS=(
   polybar i3 picom kitty rofi
   jq xdotool xclip maim nitrogen
-  nmcli bluetoothctl tailscale
+  nmcli bluetoothctl
   curl wget unzip
 )
 
+# Optional deps - won't fail the install if missing (not in standard repos on
+# all distros; user can install separately via upstream install script, etc).
+OPTIONAL_DEPS=(
+  tailscale
+)
+
 MISSING=()
-for dep in "${DEPS[@]}"; do
+MISSING_OPTIONAL=()
+for dep in "${REQUIRED_DEPS[@]}"; do
   if ! command -v "$dep" &>/dev/null; then
     MISSING+=("$dep")
   fi
 done
+for dep in "${OPTIONAL_DEPS[@]}"; do
+  if ! command -v "$dep" &>/dev/null; then
+    MISSING_OPTIONAL+=("$dep")
+  fi
+done
 
-if [ ${#MISSING[@]} -gt 0 ]; then
-  echo "  missing: ${MISSING[*]}"
+if [ ${#MISSING[@]} -gt 0 ] || [ ${#MISSING_OPTIONAL[@]} -gt 0 ]; then
+  [ ${#MISSING[@]} -gt 0 ] && echo "  missing required: ${MISSING[*]}"
+  [ ${#MISSING_OPTIONAL[@]} -gt 0 ] && echo "  missing optional: ${MISSING_OPTIONAL[*]}"
 
   case "$OS_FAMILY" in
     debian)
@@ -56,9 +95,11 @@ if [ ${#MISSING[@]} -gt 0 ]; then
         [curl]=curl
         [wget]=wget
         [unzip]=unzip
-        [tailscale]=tailscale
+        # tailscale not in standard debian repos - users install via pkgs.tailscale.com
       )
       INSTALLER=(sudo apt install -y)
+      echo "  refreshing apt lists..."
+      sudo apt-get update -qq
       ;;
     arch)
       declare -A PKG_MAP=(
@@ -80,7 +121,6 @@ if [ ${#MISSING[@]} -gt 0 ]; then
         [tailscale]=tailscale
       )
       INSTALLER=(sudo pacman -S --needed --noconfirm)
-      # pick AUR helper if present
       AUR_HELPER=""
       for h in paru yay; do
         if command -v "$h" &>/dev/null; then
@@ -98,6 +138,7 @@ if [ ${#MISSING[@]} -gt 0 ]; then
   if [ ${#INSTALLER[@]} -gt 0 ]; then
     echo "  attempting install via ${INSTALLER[0]}..."
     PKGS=()
+    OPTIONAL_PKGS=()
     AUR_PKGS=()
     for m in "${MISSING[@]}"; do
       if [ "${PKG_MAP[$m]+exists}" ]; then
@@ -111,13 +152,27 @@ if [ ${#MISSING[@]} -gt 0 ]; then
         echo "  skipping $m (install manually)"
       fi
     done
+    for m in "${MISSING_OPTIONAL[@]}"; do
+      if [ "${PKG_MAP[$m]+exists}" ]; then
+        OPTIONAL_PKGS+=("${PKG_MAP[$m]}")
+      fi
+    done
 
     if [ ${#PKGS[@]} -gt 0 ]; then
       "${INSTALLER[@]}" "${PKGS[@]}"
     fi
 
+    # optional: try each one individually so one failure doesn't block the rest
+    for p in "${OPTIONAL_PKGS[@]}"; do
+      if ! "${INSTALLER[@]}" "$p"; then
+        echo "  WARNING: optional package '$p' failed to install - skipping"
+      fi
+    done
+
     if [ ${#AUR_PKGS[@]} -gt 0 ]; then
-      if [ -n "${AUR_HELPER:-}" ]; then
+      if [ "$SKIP_AUR" = "1" ]; then
+        echo "  RICEBOX_SKIP_AUR=1 set - skipping AUR packages: ${AUR_PKGS[*]}"
+      elif [ -n "${AUR_HELPER:-}" ]; then
         echo "  installing AUR packages via $AUR_HELPER: ${AUR_PKGS[*]}"
         "$AUR_HELPER" -S --needed --noconfirm "${AUR_PKGS[@]}"
       else
@@ -201,17 +256,17 @@ else
   # Detect home SSID
   CURRENT_SSID=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | grep '^yes' | cut -d: -f2 || echo "")
   if [ -n "$CURRENT_SSID" ]; then
-    read -p "  current wifi is '$CURRENT_SSID' - use as home network? [y/N] " yn
+    yn=$(prompt_yn "  current wifi is '$CURRENT_SSID' - use as home network? [y/N] " "n")
     if [[ "$yn" =~ ^[Yy] ]]; then
       HOME_SSID="$CURRENT_SSID"
     fi
   fi
 
-  read -p "  home city for weather (e.g. Seattle+Washington+US): " HOME_LOC
+  HOME_LOC=$(prompt_val "  home city for weather (e.g. Seattle+Washington+US): " "")
 
   # Detect DPI
   DPI=96
-  PRIMARY_RES=$(xrandr --query 2>/dev/null | grep " connected primary" | grep -oP '\d+x\d+' | head -1)
+  PRIMARY_RES=$(xrandr --query 2>/dev/null | grep " connected primary" | grep -oP '\d+x\d+' | head -1 || true)
   if [ -n "$PRIMARY_RES" ]; then
     WIDTH=$(echo "$PRIMARY_RES" | cut -dx -f1)
     if [ "$WIDTH" -ge 3840 ]; then DPI=192
@@ -239,7 +294,7 @@ else
   # Detect temp sensor
   TEMP_SENSOR=""
   for h in /sys/class/hwmon/hwmon*; do
-    name=$(cat "${h}/name" 2>/dev/null)
+    name=$(cat "${h}/name" 2>/dev/null || true)
     if [ "$name" = "k10temp" ] || [ "$name" = "coretemp" ]; then
       TEMP_SENSOR="${h}/temp1_input"
       echo "  detected temp sensor: $TEMP_SENSOR"
@@ -248,10 +303,8 @@ else
   done
 
   # Font selection
-  read -p "  font name [0xProto Nerd Font]: " FONT_NAME
-  FONT_NAME="${FONT_NAME:-0xProto Nerd Font}"
-  read -p "  font size [12]: " FONT_SIZE
-  FONT_SIZE="${FONT_SIZE:-12}"
+  FONT_NAME=$(prompt_val "  font name [0xProto Nerd Font]: " "0xProto Nerd Font")
+  FONT_SIZE=$(prompt_val "  font size [12]: " "12")
 
   cat > "$ENV_FILE" << ENVEOF
 # ricebox environment config
@@ -307,7 +360,7 @@ fi
 echo "[5/6] setting up sudoers rules..."
 
 echo "  needed for power profiles and tailscale switching"
-read -p "  install sudoers rules? [y/N] " yn || yn=""
+yn=$(prompt_yn "  install sudoers rules? [y/N] " "n")
 if [[ "$yn" =~ ^[Yy] ]]; then
   USER=$(whoami)
   sudo tee /etc/sudoers.d/ricebox > /dev/null << SUDOEOF
@@ -325,7 +378,7 @@ fi
 echo "[6/6] optional extras..."
 
 if ! command -v tzupdate &>/dev/null; then
-  read -p "  install tzupdate for auto timezone? [y/N] " yn || yn=""
+  yn=$(prompt_yn "  install tzupdate for auto timezone? [y/N] " "n")
   if [[ "$yn" =~ ^[Yy] ]]; then
     case "$OS_FAMILY" in
       arch)
@@ -355,7 +408,7 @@ if ! command -v tzupdate &>/dev/null; then
 fi
 
 if [ ! -f /etc/NetworkManager/dispatcher.d/99-timezone ]; then
-  read -p "  install NetworkManager timezone auto-switch? [y/N] " yn || yn=""
+  yn=$(prompt_yn "  install NetworkManager timezone auto-switch? [y/N] " "n")
   if [[ "$yn" =~ ^[Yy] ]]; then
     TZPATH=$(which tzupdate 2>/dev/null || echo "/usr/local/bin/tzupdate")
     sudo tee /etc/NetworkManager/dispatcher.d/99-timezone > /dev/null << TZEOF
