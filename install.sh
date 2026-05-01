@@ -227,6 +227,11 @@ declare -A CONFIG_MAP=(
 mkdir -p "$HOME/.config/chrome"
 cp "$SCRIPT_DIR/chrome/ricebox.user.css" "$HOME/.config/themes/ricebox.user.css"
 
+# firefox templates live alongside themes
+mkdir -p "$HOME/.config/themes/firefox"
+cp "$SCRIPT_DIR/firefox/userChrome.css" "$HOME/.config/themes/firefox/userChrome.css"
+cp "$SCRIPT_DIR/firefox/userContent.css" "$HOME/.config/themes/firefox/userContent.css"
+
 for src in "${!CONFIG_MAP[@]}"; do
   dest="${CONFIG_MAP[$src]}"
 
@@ -323,6 +328,17 @@ else
   FONT_NAME=$(prompt_val "  font name [0xProto Nerd Font]: " "0xProto Nerd Font")
   FONT_SIZE=$(prompt_val "  font size [12]: " "12")
 
+  # Detect Firefox profile
+  FF_PROFILE=""
+  FF_DETECTED=$(find "$HOME/.mozilla/firefox" -maxdepth 1 \( -name "*.default-release" -o -name "*.default" \) 2>/dev/null | head -1)
+  if [ -n "$FF_DETECTED" ]; then
+    echo "  detected firefox profile: $FF_DETECTED"
+    yn=$(prompt_yn "  use this profile for firefox theming? [Y/n] " "y")
+    if [[ "$yn" =~ ^[Yy] ]]; then
+      FF_PROFILE="$FF_DETECTED"
+    fi
+  fi
+
   cat > "$ENV_FILE" << ENVEOF
 # ricebox environment config
 RICEBOX_HOME_SSID="${HOME_SSID:-}"
@@ -335,6 +351,7 @@ RICEBOX_TEMP_SENSOR="${TEMP_SENSOR}"
 RICEBOX_FONT="${FONT_NAME}"
 RICEBOX_FONT_SIZE=${FONT_SIZE}
 RICEBOX_OBSIDIAN_SNIPPETS=""
+RICEBOX_FIREFOX_PROFILE="${FF_PROFILE}"
 ENVEOF
 
   echo "  wrote $ENV_FILE"

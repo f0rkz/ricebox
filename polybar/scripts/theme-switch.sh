@@ -226,6 +226,50 @@ if [ -f "$RICEBOX_CHROME_TEMPLATE" ]; then
         "$RICEBOX_CHROME_TEMPLATE" > "$CHROME_CSS_DIR/ricebox-active.user.css"
 fi
 
+# === FIREFOX ===
+FIREFOX_PROFILE="${RICEBOX_FIREFOX_PROFILE:-}"
+if [ -z "$FIREFOX_PROFILE" ]; then
+    # auto-detect: find the most recently used default-release profile
+    FIREFOX_PROFILE=$(find "$HOME/.mozilla/firefox" -maxdepth 1 \( -name "*.default-release" -o -name "*.default" \) 2>/dev/null | head -1)
+fi
+if [ -n "$FIREFOX_PROFILE" ] && [ -d "$FIREFOX_PROFILE" ]; then
+    FF_CHROME_DIR="$FIREFOX_PROFILE/chrome"
+    mkdir -p "$FF_CHROME_DIR"
+
+    # ensure legacy userChrome support is enabled
+    USER_JS="$FIREFOX_PROFILE/user.js"
+    PREF='user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);'
+    if ! grep -qF "toolkit.legacyUserProfileCustomizations.stylesheets" "$USER_JS" 2>/dev/null; then
+        echo "$PREF" >> "$USER_JS"
+    fi
+
+    FF_SED=(sed
+        -e "s/RICEBOX_BG/$BG/g"
+        -e "s/RICEBOX_BG_ALT/$BG_ALT/g"
+        -e "s/RICEBOX_BG_DARK/$BG_DARK/g"
+        -e "s/RICEBOX_FG_ALT/$FG_ALT/g"
+        -e "s/RICEBOX_FG/$FG/g"
+        -e "s/RICEBOX_PRIMARY/$PRIMARY/g"
+        -e "s/RICEBOX_SECONDARY/$SECONDARY/g"
+        -e "s/RICEBOX_ALERT/$ALERT/g"
+        -e "s/RICEBOX_DISABLED/$DISABLED/g"
+        -e "s/RICEBOX_GREEN/$GREEN/g"
+        -e "s/RICEBOX_YELLOW/$YELLOW/g"
+        -e "s/RICEBOX_RED/$RED/g"
+        -e "s/RICEBOX_CYAN/$CYAN/g"
+    )
+
+    RICEBOX_FF_CHROME="${RICEBOX_FF_CHROME:-$HOME/.config/themes/firefox/userChrome.css}"
+    RICEBOX_FF_CONTENT="${RICEBOX_FF_CONTENT:-$HOME/.config/themes/firefox/userContent.css}"
+
+    [ -f "$RICEBOX_FF_CHROME" ]  && "${FF_SED[@]}" "$RICEBOX_FF_CHROME"  > "$FF_CHROME_DIR/userChrome.css"
+    [ -f "$RICEBOX_FF_CONTENT" ] && "${FF_SED[@]}" "$RICEBOX_FF_CONTENT" > "$FF_CHROME_DIR/userContent.css"
+
+    # also emit a Stylus user.css (same as chrome template)
+    RICEBOX_CHROME_TEMPLATE="${RICEBOX_CHROME_TEMPLATE:-$HOME/.config/themes/ricebox.user.css}"
+    [ -f "$RICEBOX_CHROME_TEMPLATE" ] && "${FF_SED[@]}" "$RICEBOX_CHROME_TEMPLATE" > "$FF_CHROME_DIR/ricebox-active.user.css"
+fi
+
 # === LFK ===
 if command -v lfk &>/dev/null || [ -d "$HOME/.config/lfk" ]; then
     mkdir -p "$HOME/.config/lfk"
