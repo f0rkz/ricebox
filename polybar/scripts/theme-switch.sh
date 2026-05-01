@@ -204,6 +204,160 @@ with open("$VSCODE_SETTINGS", "w") as f:
 PYEOF
 fi
 
+# === CHROME (Stylus) ===
+CHROME_CSS_DIR="$HOME/.config/chrome"
+RICEBOX_CHROME_TEMPLATE="${RICEBOX_CHROME_TEMPLATE:-$HOME/.config/themes/ricebox.user.css}"
+if [ -f "$RICEBOX_CHROME_TEMPLATE" ]; then
+    mkdir -p "$CHROME_CSS_DIR"
+    sed \
+        -e "s/RICEBOX_BG/$BG/g" \
+        -e "s/RICEBOX_BG_ALT/$BG_ALT/g" \
+        -e "s/RICEBOX_BG_DARK/$BG_DARK/g" \
+        -e "s/RICEBOX_FG_ALT/$FG_ALT/g" \
+        -e "s/RICEBOX_FG/$FG/g" \
+        -e "s/RICEBOX_PRIMARY/$PRIMARY/g" \
+        -e "s/RICEBOX_SECONDARY/$SECONDARY/g" \
+        -e "s/RICEBOX_ALERT/$ALERT/g" \
+        -e "s/RICEBOX_DISABLED/$DISABLED/g" \
+        -e "s/RICEBOX_GREEN/$GREEN/g" \
+        -e "s/RICEBOX_YELLOW/$YELLOW/g" \
+        -e "s/RICEBOX_RED/$RED/g" \
+        -e "s/RICEBOX_CYAN/$CYAN/g" \
+        "$RICEBOX_CHROME_TEMPLATE" > "$CHROME_CSS_DIR/ricebox-active.user.css"
+fi
+
+# === LFK ===
+if command -v lfk &>/dev/null || [ -d "$HOME/.config/lfk" ]; then
+    mkdir -p "$HOME/.config/lfk"
+    python3 << PYEOF
+import re, os
+
+cfg = os.path.expanduser("~/.config/lfk/config.yaml")
+theme_block = """theme:
+  primary: "$PRIMARY"
+  secondary: "$SECONDARY"
+  text: "$FG"
+  error: "$ALERT"
+  warning: "$YELLOW"
+  selected_fg: "$BG_DARK"
+  selected_bg: "$PRIMARY"
+  dimmed: "$DISABLED"
+  base: "$BG"
+"""
+if os.path.exists(cfg):
+    with open(cfg) as f:
+        content = f.read()
+    content = re.sub(r'^theme:\n(?:  [^\n]*\n)*', '', content, flags=re.MULTILINE)
+    content = content.rstrip('\n') + '\n' + theme_block
+else:
+    content = theme_block
+with open(cfg, "w") as f:
+    f.write(content)
+PYEOF
+fi
+
+# === K9S ===
+K9S_CONF="$HOME/.config/k9s"
+if [ -d "$K9S_CONF" ]; then
+    mkdir -p "$K9S_CONF/skins"
+    cat > "$K9S_CONF/skins/ricebox-${choice}.yaml" << K9SEOF
+k9s:
+  body:
+    fgColor: "$FG"
+    bgColor: "$BG"
+    logoColor: "$PRIMARY"
+  prompt:
+    fgColor: "$FG"
+    bgColor: "$BG"
+    suggestColor: "$SECONDARY"
+  info:
+    fgColor: "$PRIMARY"
+    bgColor: "$BG"
+  dialog:
+    fgColor: "$FG"
+    bgColor: "$BG_ALT"
+    buttonFgColor: "$FG"
+    buttonBgColor: "$PRIMARY"
+    buttonFocusFgColor: "$BG"
+    buttonFocusBgColor: "$GREEN"
+    labelFgColor: "$YELLOW"
+    fieldFgColor: "$FG"
+  frame:
+    border:
+      fgColor: "$BG_ALT"
+      focusColor: "$PRIMARY"
+    menu:
+      fgColor: "$FG"
+      keyColor: "$PRIMARY"
+      numKeyColor: "$SECONDARY"
+    crumbs:
+      fgColor: "$BG"
+      bgColor: "$PRIMARY"
+      activeColor: "$SECONDARY"
+    status:
+      newColor: "$GREEN"
+      modifyColor: "$YELLOW"
+      addColor: "$GREEN"
+      errorColor: "$ALERT"
+      highlightColor: "$SECONDARY"
+      killColor: "$RED"
+      completedColor: "$DISABLED"
+    title:
+      fgColor: "$FG"
+      bgColor: "$BG"
+      highlightColor: "$PRIMARY"
+      counterColor: "$SECONDARY"
+      filterColor: "$GREEN"
+  views:
+    charts:
+      bgColor: default
+      defaultDialColors:
+        - "$PRIMARY"
+        - "$ALERT"
+      defaultChartColors:
+        - "$PRIMARY"
+        - "$SECONDARY"
+    table:
+      fgColor: "$FG"
+      bgColor: "$BG"
+      markColor: "$YELLOW"
+      header:
+        fgColor: "$PRIMARY"
+        bgColor: "$BG"
+        sorterColor: "$SECONDARY"
+    xray:
+      fgColor: "$FG"
+      bgColor: "$BG"
+      cursorColor: "$BG_ALT"
+      graphicColor: "$PRIMARY"
+      showIcons: false
+    yaml:
+      keyColor: "$PRIMARY"
+      colonColor: "$FG"
+      valueColor: "$GREEN"
+    logs:
+      fgColor: "$FG"
+      bgColor: "$BG"
+      indicator:
+        fgColor: "$FG"
+        bgColor: "$PRIMARY"
+K9SEOF
+
+    python3 << PYEOF
+import re
+cfg = "$K9S_CONF/config.yaml"
+with open(cfg) as f:
+    content = f.read()
+skin_line = "    skin: ricebox-${choice}"
+if re.search(r'^\s+skin:', content, re.MULTILINE):
+    content = re.sub(r'^\s+skin:.*', skin_line, content, flags=re.MULTILINE)
+else:
+    content = re.sub(r'(^  ui:\s*$)', r'\1\n' + skin_line, content, flags=re.MULTILINE)
+with open(cfg, "w") as f:
+    f.write(content)
+PYEOF
+fi
+
 # Reload everything
 i3-msg reload > /dev/null 2>&1
 pkill -USR1 kitty 2>/dev/null

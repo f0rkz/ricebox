@@ -58,6 +58,7 @@ REQUIRED_DEPS=(
 # all distros; user can install separately via upstream install script, etc).
 OPTIONAL_DEPS=(
   tailscale
+  lfk
 )
 
 MISSING=()
@@ -222,6 +223,10 @@ declare -A CONFIG_MAP=(
   [themes]="$HOME/.config/themes"
 )
 
+# chrome userstyle template lives alongside themes
+mkdir -p "$HOME/.config/chrome"
+cp "$SCRIPT_DIR/chrome/ricebox.user.css" "$HOME/.config/themes/ricebox.user.css"
+
 for src in "${!CONFIG_MAP[@]}"; do
   dest="${CONFIG_MAP[$src]}"
 
@@ -240,6 +245,18 @@ done
 chmod +x "$HOME/.config/polybar/polybar.sh"
 chmod +x "$HOME/.config/polybar/scripts/"*.sh
 chmod +x "$HOME/.config/themes/current-colors.sh"
+
+# lfk - ensure config dir exists (theme injected on first theme switch)
+if command -v lfk &>/dev/null || [ -d "$HOME/.config/lfk" ]; then
+  mkdir -p "$HOME/.config/lfk"
+  echo "  lfk config dir ready"
+fi
+
+# k9s - ensure skins dir exists
+if command -v k9s &>/dev/null || [ -d "$HOME/.config/k9s" ]; then
+  mkdir -p "$HOME/.config/k9s/skins"
+  echo "  k9s skins dir ready"
+fi
 
 # Generate and install nvim colorschemes
 echo "  generating nvim colorschemes..."
