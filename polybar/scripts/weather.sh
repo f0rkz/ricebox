@@ -33,6 +33,15 @@ if [ -z "$TEMPERATURE" ] || [ "$TEMPERATURE" = "null" ] || [ -z "$WEATHER_CODE" 
     exit 0
 fi
 
+# Plain-text cache for consumers that can't do a live network call on demand
+# (e.g. the lock screen, which needs to lock instantly).
+CONDITION=$(echo "$WEATHER_JSON" | jq -r '.current_condition[0].weatherDesc[0].value' 2>/dev/null)
+if [ -n "$CONDITION" ] && [ "$CONDITION" != "null" ]; then
+    CACHE_DIR="$HOME/.cache/ricebox"
+    mkdir -p "$CACHE_DIR"
+    echo "${TEMPERATURE}°F ${CONDITION}" > "$CACHE_DIR/weather"
+fi
+
 # Map wttr.in weather codes to icons
 # FA6: sun=f185 cloud-sun=f6c4 cloud=f0c2 cloud-rain=f73d cloud-showers-heavy=f740
 #      bolt=f0e7 snowflake=f2dc smog=f75f moon=f186 cloud-moon=f6c3
