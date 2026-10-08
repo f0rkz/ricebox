@@ -17,6 +17,9 @@ if type "xrandr" > /dev/null 2>&1; then
       MONITOR=$m polybar --config=$CONFIG_DIR/config.ini vertical &
     elif [ "$m" = "${RICEBOX_LAPTOP_PANEL:-eDP-1}" ] && [ "$ext_count" -gt 0 ]; then
       continue
+    elif [ "$m" = "${RICEBOX_LAPTOP_PANEL:-eDP-1}" ] && [ "$ext_count" -eq 0 ]; then
+      MONITOR=$m polybar --config=$CONFIG_DIR/config.ini laptop &
+      MONITOR=$m polybar --config=$CONFIG_DIR/config.ini bottom &
     else
       MONITOR=$m polybar --config=$CONFIG_DIR/config.ini main &
     fi

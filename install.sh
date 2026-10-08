@@ -84,7 +84,6 @@ if [ ${#MISSING[@]} -gt 0 ] || [ ${#MISSING_OPTIONAL[@]} -gt 0 ]; then
         [polybar]=polybar
         [i3]=i3
         [picom]=picom
-        [kitty]=kitty
         [rofi]=rofi
         [jq]=jq
         [xdotool]=xdotool
@@ -144,6 +143,11 @@ if [ ${#MISSING[@]} -gt 0 ] || [ ${#MISSING_OPTIONAL[@]} -gt 0 ]; then
     OPTIONAL_PKGS=()
     AUR_PKGS=()
     for m in "${MISSING[@]}"; do
+      # Debian/Ubuntu use kitty's maintainer-provided binary below rather than
+      # the distro package. Do not report it as an unmapped dependency here.
+      if [ "$OS_FAMILY" = "debian" ] && [ "$m" = "kitty" ]; then
+        continue
+      fi
       if [ "${PKG_MAP[$m]+exists}" ]; then
         p="${PKG_MAP[$m]}"
         if [[ "$p" == aur:* ]]; then
@@ -183,6 +187,21 @@ if [ ${#MISSING[@]} -gt 0 ] || [ ${#MISSING_OPTIONAL[@]} -gt 0 ]; then
       fi
     fi
   fi
+fi
+
+# Ubuntu's kitty package can lag behind the maintainer build and has caused
+# duplicate Backspace input in Codex. Use the official binary installer on
+# Debian-family systems; Arch continues to use its repository package above.
+if [ "$OS_FAMILY" = "debian" ]; then
+  echo "  installing maintainer-provided kitty..."
+  curl -fsSL https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin launch=n
+
+  # The upstream installer intentionally only writes ~/.local/kitty.app.
+  # Put its launchers in the standard user bin directory so they take
+  # precedence over an existing distro kitty when ~/.local/bin is on PATH.
+  mkdir -p "$HOME/.local/bin"
+  ln -sf "$HOME/.local/kitty.app/bin/kitty" "$HOME/.local/bin/kitty"
+  ln -sf "$HOME/.local/kitty.app/bin/kitten" "$HOME/.local/bin/kitten"
 fi
 
 # --- fonts ---
@@ -253,6 +272,7 @@ done
 chmod +x "$HOME/.config/polybar/polybar.sh"
 chmod +x "$HOME/.config/polybar/scripts/"*.sh
 chmod +x "$HOME/.config/themes/current-colors.sh"
+chmod +x "$HOME/.config/i3/launch-terminal.sh"
 
 # lfk - ensure config dir exists (theme injected on first theme switch)
 if command -v lfk &>/dev/null || [ -d "$HOME/.config/lfk" ]; then

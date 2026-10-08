@@ -26,6 +26,12 @@ check() {
 echo "--- verifying install ---"
 check "polybar config"  "$HOME/.config/polybar/config.ini"
 check "kitty config"    "$HOME/.config/kitty/kitty.conf"
+check "terminal launcher" "$HOME/.config/i3/launch-terminal.sh"
+if [ "$1" = "debian" ]; then
+  check "upstream kitty binary" "$HOME/.local/kitty.app/bin/kitty"
+  check "kitty PATH symlink" "$HOME/.local/bin/kitty"
+  check "kitten PATH symlink" "$HOME/.local/bin/kitten"
+fi
 check "i3 config"       "$HOME/.config/i3/config"
 check "rofi config"     "$HOME/.config/rofi/config.rasi"
 check "picom config"    "$HOME/.config/picom/picom.conf"
@@ -51,7 +57,7 @@ run_test() {
   echo "------------------------------------------------"
   echo "  running installer: $name"
   echo "------------------------------------------------"
-  docker run --rm "$tag" bash -c "./install.sh && $VERIFY"
+  docker run --rm "$tag" bash -c "./install.sh && $VERIFY" -- "$name"
 
   echo "=== $name: PASS ==="
 }
