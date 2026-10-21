@@ -50,7 +50,7 @@ echo "[1/6] checking dependencies..."
 REQUIRED_DEPS=(
   polybar i3 picom kitty rofi
   jq xdotool xclip maim nitrogen
-  nmcli bluetoothctl
+  nmcli bluetoothctl xss-lock
   curl wget unzip
 )
 
@@ -84,7 +84,6 @@ if [ ${#MISSING[@]} -gt 0 ] || [ ${#MISSING_OPTIONAL[@]} -gt 0 ]; then
         [polybar]=polybar
         [i3]=i3
         [picom]=picom
-        [kitty]=kitty
         [rofi]=rofi
         [jq]=jq
         [xdotool]=xdotool
@@ -93,6 +92,7 @@ if [ ${#MISSING[@]} -gt 0 ] || [ ${#MISSING_OPTIONAL[@]} -gt 0 ]; then
         [nitrogen]=nitrogen
         [nmcli]=network-manager
         [bluetoothctl]=bluez
+        [xss-lock]=xss-lock
         [curl]=curl
         [wget]=wget
         [unzip]=unzip
@@ -116,6 +116,7 @@ if [ ${#MISSING[@]} -gt 0 ] || [ ${#MISSING_OPTIONAL[@]} -gt 0 ]; then
         [nitrogen]=aur:nitrogen
         [nmcli]=networkmanager
         [bluetoothctl]=bluez-utils
+        [xss-lock]=xss-lock
         [curl]=curl
         [wget]=wget
         [unzip]=unzip
@@ -142,6 +143,11 @@ if [ ${#MISSING[@]} -gt 0 ] || [ ${#MISSING_OPTIONAL[@]} -gt 0 ]; then
     OPTIONAL_PKGS=()
     AUR_PKGS=()
     for m in "${MISSING[@]}"; do
+      # Debian/Ubuntu use kitty's maintainer-provided binary below rather than
+      # the distro package. Do not report it as an unmapped dependency here.
+      if [ "$OS_FAMILY" = "debian" ] && [ "$m" = "kitty" ]; then
+        continue
+      fi
       if [ "${PKG_MAP[$m]+exists}" ]; then
         p="${PKG_MAP[$m]}"
         if [[ "$p" == aur:* ]]; then
@@ -183,6 +189,21 @@ if [ ${#MISSING[@]} -gt 0 ] || [ ${#MISSING_OPTIONAL[@]} -gt 0 ]; then
   fi
 fi
 
+# Ubuntu's kitty package can lag behind the maintainer build and has caused
+# duplicate Backspace input in Codex. Use the official binary installer on
+# Debian-family systems; Arch continues to use its repository package above.
+if [ "$OS_FAMILY" = "debian" ]; then
+  echo "  installing maintainer-provided kitty..."
+  curl -fsSL https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin launch=n
+
+  # The upstream installer intentionally only writes ~/.local/kitty.app.
+  # Put its launchers in the standard user bin directory so they take
+  # precedence over an existing distro kitty when ~/.local/bin is on PATH.
+  mkdir -p "$HOME/.local/bin"
+  ln -sf "$HOME/.local/kitty.app/bin/kitty" "$HOME/.local/bin/kitty"
+  ln -sf "$HOME/.local/kitty.app/bin/kitten" "$HOME/.local/bin/kitten"
+fi
+
 # --- fonts ---
 echo "[2/6] installing fonts..."
 
@@ -221,6 +242,7 @@ declare -A CONFIG_MAP=(
   [rofi]="$HOME/.config/rofi"
   [picom]="$HOME/.config/picom"
   [themes]="$HOME/.config/themes"
+  [i3lock]="$HOME/.config/i3lock"
 )
 
 # chrome userstyle template lives alongside themes
@@ -250,6 +272,7 @@ done
 chmod +x "$HOME/.config/polybar/polybar.sh"
 chmod +x "$HOME/.config/polybar/scripts/"*.sh
 chmod +x "$HOME/.config/themes/current-colors.sh"
+chmod +x "$HOME/.config/i3/launch-terminal.sh"
 
 # lfk - ensure config dir exists (theme injected on first theme switch)
 if command -v lfk &>/dev/null || [ -d "$HOME/.config/lfk" ]; then
@@ -436,6 +459,70 @@ if ! command -v tzupdate &>/dev/null; then
         ;;
       *)
         pip install --user tzupdate || echo "  install manually"
+        ;;
+    esac
+  fi
+fi
+
+# i3lock-color installs a binary literally named `i3lock` (it replaces/shadows
+# the plain i3lock), and `i3lock --help` only ever prints a short usage banner
+# for both builds - so detect it by grepping the binary for a color-only
+# long-option name instead.
+if command -v i3lock &>/dev/null && strings "$(command -v i3lock)" 2>/dev/null | grep -qx 'ringver-color'; then
+  echo "  i3lock-color already installed"
+else
+  yn=$(prompt_yn "  install i3lock-color for the themed lock screen? [y/N] " "n")
+  if [[ "$yn" =~ ^[Yy] ]]; then
+    case "$OS_FAMILY" in
+      arch)
+        AUR_HELPER=""
+        for h in paru yay; do
+          if command -v "$h" &>/dev/null; then
+            AUR_HELPER="$h"
+            break
+          fi
+        done
+        if [ -n "$AUR_HELPER" ]; then
+          "$AUR_HELPER" -S --needed --noconfirm i3lock-color
+        else
+          echo "  no paru/yay found - install manually: https://aur.archlinux.org/packages/i3lock-color/"
+        fi
+        ;;
+      debian)
+        echo "  no i3lock-color package on debian/ubuntu - building from source..."
+        BUILD_DEPS=(
+          autoconf gcc make pkg-config libpam0g-dev libcairo2-dev
+          libfontconfig1-dev libxcb-composite0-dev libev-dev libx11-xcb-dev
+          libxcb-xkb-dev libxcb-xinerama0-dev libxcb-randr0-dev
+          libxcb-image0-dev libxcb-util-dev libxcb-xrm-dev libxkbcommon-dev
+          libxkbcommon-x11-dev libjpeg-dev libgif-dev
+        )
+        if sudo apt install -y "${BUILD_DEPS[@]}"; then
+          I3LOCK_SRC=$(mktemp -d)
+          # prefix=/usr/local so this shadows (via PATH order) rather than
+          # clobbers the apt-owned /usr/bin/i3lock file
+          if git clone --depth 1 https://github.com/Raymo111/i3lock-color.git "$I3LOCK_SRC" \
+            && ( cd "$I3LOCK_SRC" \
+                 && git tag -f "git-$(git rev-parse --short HEAD)" \
+                 && autoreconf -fiv \
+                 && mkdir -p build && cd build \
+                 && ../configure --prefix=/usr/local --sysconfdir=/etc \
+                 && make -j"$(nproc)" \
+                 && sudo make install ); then
+            echo "  i3lock-color installed to /usr/local/bin/i3lock"
+            if [ "$(command -v i3lock)" != "/usr/local/bin/i3lock" ]; then
+              echo "  WARNING: /usr/bin/i3lock (plain) is still first in PATH - fix PATH order or remove the 'i3lock' apt package"
+            fi
+          else
+            echo "  WARNING: i3lock-color build failed - see output above, install manually"
+          fi
+          rm -rf "$I3LOCK_SRC"
+        else
+          echo "  WARNING: failed to install i3lock-color build deps via apt"
+        fi
+        ;;
+      *)
+        echo "  unknown OS family - install i3lock-color manually: https://github.com/Raymo111/i3lock-color"
         ;;
     esac
   fi

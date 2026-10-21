@@ -10,9 +10,13 @@ sleep 0.5
 
 if type "xrandr" > /dev/null 2>&1; then
   # Only outputs with a current geometry are active; connected outputs may be off.
-  for m in $(xrandr --query | awk '$2 == "connected" && / [0-9]+x[0-9]+[+-][0-9]+[+-][0-9]+ / {print $1}'); do
+  mapfile -t monitors < <(xrandr --query | awk '$2 == "connected" && / [0-9]+x[0-9]+[+-][0-9]+[+-][0-9]+ / {print $1}')
+  for m in "${monitors[@]}"; do
     if [ "$m" = "$VERTICAL" ] && [ -n "$VERTICAL" ]; then
       MONITOR=$m polybar --config="$CONFIG_DIR/config.ini" vertical &
+    elif [ "$m" = "${RICEBOX_LAPTOP_PANEL:-eDP-1}" ] && [ "${#monitors[@]}" -eq 1 ]; then
+      MONITOR=$m polybar --config="$CONFIG_DIR/config.ini" laptop &
+      MONITOR=$m polybar --config="$CONFIG_DIR/config.ini" bottom &
     else
       MONITOR=$m polybar --config="$CONFIG_DIR/config.ini" main &
     fi
